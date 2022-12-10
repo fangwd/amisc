@@ -18,12 +18,16 @@ describe('tmpfile', () => {
         let i = 0;
         config.randomName = () => ['1', '1', '2', '2', '3'][i++]
         const names = ['1', '2', '3']
-        names.forEach(name => {
-            const path = join(os.tmpdir(), name);
+        names.forEach((name) => {
+          const path = join(os.tmpdir(), name);
+          try {
             if (fs.lstatSync(path).isFile()) {
-                fs.unlinkSync(path)
+              fs.unlinkSync(path);
             }
-        })
+          } catch (err) {
+            // ENOENT
+          }
+        });
         const result = await Promise.all([tmpfile(), tmpfile(), tmpfile()])
         for (const tmp of result) {
             expect(fs.lstatSync(tmp.path).isFile());

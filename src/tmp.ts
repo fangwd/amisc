@@ -2,13 +2,25 @@ import * as fs from 'fs'
 import * as os from 'os'
 import { join } from 'path'
 
-export const tmpfile = () => _tmp(_file)
-export const tmpdir = () => _tmp(_dir)
-
 export type Tmp = {
     path: string;
     fd?: number;
 }
+
+export const tmpdir = () => _tmp(_dir)
+
+export interface TmpFileOptions {
+    fd: boolean;
+}
+
+export const tmpfile = async (options?: TmpFileOptions) => {
+  options = { fd: true, ...options };
+  const tmp = await _tmp(_file);
+  if (!options.fd) {
+    await close(tmp.fd as number);
+  }
+  return tmp;
+};
 
 function _file(path: string): Promise<Tmp> {
     const { O_CREAT, O_EXCL, O_RDWR } = fs.constants;
@@ -65,4 +77,16 @@ export function randomName(length: number) {
         result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return result;
+}
+
+export function close(fd: number) {
+  return new Promise<void>((resolve, reject) => {
+    fs.close(fd, (err) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
+  });
 }
